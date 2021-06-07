@@ -1,28 +1,31 @@
-function Get-Sys-Info {
-    param (
-        $arg
-    )
-
-    Write-Output "${arg}"
+function Report {
 
     $computer_name = HOSTNAME.EXE
 
     $services = Get-Services-Limited 10
 
-    Write-Output $computer_name
+    $computer_specs = Get-Computer-Specs
+
+    Write-Output-Report-Data $computer_name, $services, $computer_specs
+    
+}
+
+function Write-Output-Report-Data {
+    param (
+        $computer_name,
+        $services,
+        $computer_specs
+    )
+    
+    Write-Output "Computer name: " $computer_name
 
     foreach($service in $services){
         Write-Output $service
     }
 
-    Write-Output "`n"
-
-    $computer_specs = Get-Computer-Specs
-
     foreach($spec in $computer_specs) {
         Write-Output $spec
     }
-    
 }
 
 function Get-Services-Limited {
@@ -35,16 +38,19 @@ function Get-Services-Limited {
 }
 
 function Get-Computer-Specs {
-    $OSInfo = Get-CimInstance -ClassName Win32_OperatingSystem
-    $ProcessorInfo = Get-CimInstance -ClassName Win32_Processor
-    $BiosInfo = Get-CimInstance -ClassName Win32_BIOS
-    $MemoryInfo = Get-CimInstance -ClassName Win32_PhysicalMemory
 
-    $Row = "" | Select-Object OS, Processor, Bios, Memory
-    $Row.OS = $OSInfo
-    $Row.Processor = $ProcessorInfo
-    $Row.Bios = $BiosInfo
-    $Row.Memory = $MemoryInfo
+    $os_specs = Get-ComputerInfo
+
+    $os_name = $os_specs.OsName
+    $memory = $os_specs.OsFreePhysicalMemory
+    $processor = $os_specs.CsProcessors
+    $bios = $os_specs.BiosBIOSVersion
+
+    $Row = "" | Select-Object OS, Processor, Bios, FreeMemory
+    $Row.OS = $os_name
+    $Row.Processor = $processor
+    $Row.Bios = $bios
+    $Row.FreeMemory = "${memory} MB"
 
     $Row
 }
@@ -60,8 +66,6 @@ switch ($arg) {
     }}
     "specs" {Get-Computer-Specs}
     "name" {HOSTNAME.EXE}
-    "report" {Get-Sys-Info}
+    "report" {Report}
     Default {"No such command"}
 }
-
-# Get-Sys-Info $arg
