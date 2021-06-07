@@ -27,7 +27,7 @@ function Get-Sys-Info {
 
 function Get-Services-Limited {
     param (
-        $max_services
+        $max_services = 10
     )
 
     Get-Service | Select-Object -First $max_services
@@ -52,8 +52,16 @@ function Get-Computer-Specs {
 $arg = $args[0]
 
 switch ($arg) {
-    "services" {Get-Services-Limited $args[1]}
-    Default {"No"}
+    "services" {if($null -eq $args[1]){
+        Get-Services-Limited
+    }
+    else {
+        Get-Services-Limited $args[1]
+    }}
+    "specs" {Get-Computer-Specs}
+    "name" {HOSTNAME.EXE}
+    "report" {Get-Sys-Info}
+    Default {"No such command"}
 }
 
 # Get-Sys-Info $arg
