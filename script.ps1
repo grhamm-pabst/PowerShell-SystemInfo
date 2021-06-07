@@ -10,6 +10,43 @@ function Report {
     
 }
 
+function ConvertTo-Html-Report {
+
+    $date = Get-Date -Format "dddd dd/MM/yyyy HH:mm"
+
+    $computer_name = HOSTNAME.EXE
+
+    $services = Get-Services-Limited 10
+
+    $computer_specs = Get-Computer-Specs
+
+    $name_html = "<h1>Computer name: ${computer_name}</h1>"
+
+    $services_html = $services | ConvertTo-Html -Property Name, DisplayName, Status -Fragment
+
+    $specs_html = @"
+    <div>
+    <p>OS: $($computer_specs.OS)</p>
+    <p>Bios: $($computer_specs.Bios)</p>
+    <p>Disk: $($computer_specs.Disk)</p>
+    <p>Free Memory: $($computer_specs.FreeMemory)</p>
+    </div>
+"@
+
+    @"
+    <html>
+    <body>
+    ${name_html}
+    <p>${date}</p>
+    <h2>Services</h2>
+    ${services_html}
+    <h2>Specs</h2>
+    ${specs_html}
+    </body>
+    </html>
+"@ | Out-File ./report.html
+}
+
 function Write-Output-Report-Data {
     param (
         $computer_name,
@@ -37,20 +74,29 @@ function Get-Services-Limited {
 
 }
 
+function Write-Output-Specs-Data {
+    $computer_specs = Get-Computer-Specs
+
+    Write-Output $computer_specs | Format-List
+    
+}
+
 function Get-Computer-Specs {
 
     $os_specs = Get-ComputerInfo
 
+    $disk_info = Get-Disk
+
     $os_name = $os_specs.OsName
-    $memory = $os_specs.OsFreePhysicalMemory
-    $processor = $os_specs.CsProcessors
+    $free_memory = $os_specs.OsFreePhysicalMemory
+    $disk = $disk_info[0].Size
     $bios = $os_specs.BiosBIOSVersion
 
-    $Row = "" | Select-Object OS, Processor, Bios, FreeMemory
+    $Row = "" | Select-Object OS, Disk, Bios, FreeMemory
     $Row.OS = $os_name
-    $Row.Processor = $processor
+    $Row.Disk = "${disk} MB"
     $Row.Bios = $bios
-    $Row.FreeMemory = "${memory} MB"
+    $Row.FreeMemory = "${free_memory} MB"
 
     $Row
 }
@@ -64,8 +110,9 @@ switch ($arg) {
     else {
         Get-Services-Limited $args[1]
     }}
-    "specs" {Get-Computer-Specs}
+    "specs" {Write-Output-Specs-Data}
     "name" {HOSTNAME.EXE}
     "report" {Report}
+    "build" {ConvertTo-Html-Report}
     Default {"No such command"}
 }
